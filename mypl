@@ -1,0 +1,6 @@
+#!/bin/bash
+
+# run mypl with the given command line args
+python mypl.py "$@"
+
+
