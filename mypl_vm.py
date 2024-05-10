@@ -34,7 +34,7 @@ class VM:
         """Creates a VM."""
         self.struct_heap = {}        # id -> dict
         self.array_heap = {}         # id -> list
-        self.next_obj_id = "2024,heap_object"      # next available object id (int)
+        self.next_obj_id = (2024, "heap_object")      # next available object id (int)
         self.frame_templates = {}    # function name -> VMFrameTemplate
         self.call_stack = []         # function call stack
         self.call_stack_id = 0
@@ -45,6 +45,7 @@ class VM:
     def run_garbage_collector(self):
         parents = self.get_parents()
         marked_objects = self.mark_phase(parents)
+        print(marked_objects)
         self.sweep_phase(marked_objects)
         
 
@@ -182,11 +183,9 @@ class VM:
                 else:
                     frame.variables.append(val)
 
-                if type(val) == str:
-                    if "heap_object" in val:
-                        self.root_set.append((self.call_stack_id, int(val.split(",")[0])))
-                        #print(self.root_set)
-                
+                if type(val) == tuple:
+                    self.root_set.append((self.call_stack_id, val[0]))
+
 
             #------------------------------------------------------------
             # Operations
@@ -383,27 +382,40 @@ class VM:
             #------------------------------------------------------------
 
             elif instr.opcode == OpCode.ALLOCS:
-                split_pieces = self.next_obj_id.split(",")
-                oid = int(split_pieces[0])
-                # oid = self.next_obj_id
-                self.struct_heap[self.next_obj_id] = {}
+                # split_pieces = self.next_obj_id.split(",")
+                # oid = int(split_pieces[0])
+
+                self.struct_heap[self.next_obj_id[0]] = {}
                 frame.operand_stack.append(self.next_obj_id)
-                self.object_graph[oid] = HeapObject(oid)
-                self.next_obj_id = str(oid+1) + "," + split_pieces[1]
-                print_struct_heap = True
+                self.object_graph[self.next_obj_id[0]] = HeapObject(self.next_obj_id[0])
+                self.next_obj_id = (self.next_obj_id[0]+1,"heap_object")
+                #self.next_obj_id = str(oid+1) + "," + split_pieces[1]
 
             elif instr.opcode == OpCode.SETF:
                 val = frame.operand_stack.pop()
                 oid = frame.operand_stack.pop()
+                oid_num = oid[0]
+                val_num = None
+
                 if oid == None:
                     self.error("null object")
-                self.struct_heap[oid][instr.operand] = val
-                if type(val) == str:
-                    if "heap_object" in val:
-                        oid = int(oid.split(",")[0])
-                        val = int(val.split(",")[0])
-                        self.object_graph[oid].add_reference(val)
-                        self.object_graph[val].add_parent(oid)
+                # print("val", val_num)
+                # print("oid", oid_num)
+
+                if type(val) == tuple:
+                    val_num = val[0]
+                    self.struct_heap[oid_num][instr.operand] = val_num
+                    self.object_graph[oid_num].add_reference(val_num)
+                    self.object_graph[val_num].add_parent(oid_num)
+                else:
+                    self.struct_heap[oid_num][instr.operand] = val
+                    
+                # if type(val) == str:
+                #     if "heap_object" in val:
+                #         oid = int(oid.split(",")[0])
+                #         val = int(val.split(",")[0])
+                #         self.object_graph[oid].add_reference(val)
+                #         self.object_graph[val].add_parent(oid)
 
             elif instr.opcode == OpCode.GETF:
                 oid = frame.operand_stack.pop()
