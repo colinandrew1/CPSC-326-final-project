@@ -6,7 +6,7 @@ struct Node {
 void main() {
     Node n1 = new Node(1, null);    //2024
     Node n2 = new Node(2, null);    //2025
-    Node n5 = my_fun();  //2028
+    // Node n5 = my_fun();  //2028
 }
 
 Node my_fun() {
@@ -14,4 +14,9 @@ Node my_fun() {
     Node n4 = new Node(4, null);    //2027
     Node n5 = new Node(5, null);    //2028
     return n5;
+}
+
+void other_fun() {
+    Node n6 = new Node(6, null);    //2029
+    Node n7 = new Node(7, null);    //2030
 }
