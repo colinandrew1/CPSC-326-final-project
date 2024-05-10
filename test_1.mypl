@@ -1,21 +1,17 @@
-struct Test {
-    int x1;
-    Test t1;
-    Test t2;
+struct Node {
+    int val;
+    Node next;
 }
 
 void main() {
-    Test test1 = new Test(5, new Test(6, null, null), null); // 2024 & 2025
-    test1.t2 = new Test(5,null,null);   // 2026
-    Test test2 = new Test(6,null,null); // 2027
-    Test test5 = my_fun();  // 2030
-    Test test6 = new Test(6,null,null);  //2031
+    array int xs = new int[5];  // 2024
+    array Node nodes = new Node[6];  // 2025
+    xs[0] = my_fun();   // 2028
 }
 
-
-Test my_fun() {
-    Test test3 = new Test(5, null, null);   // 2028
-    Test test7 = new Test(5, null, null);   // 2029
-    Test test4 = new Test(6,null,null); // 2030
-    return test4;
+int my_fun() {
+    array int zs = new int[7];  // 2026
+    array int as = new int[8];  // 2027
+    // return new Node(1, null);   //2028
+    return 5;
 }

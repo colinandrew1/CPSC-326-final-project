@@ -40,13 +40,16 @@ class VM:
         self.call_stack_id = 0
         self.root_set = []
         self.object_graph = {}
+        self.yellow_light_from_return = False
 
 
     def run_garbage_collector(self):
         #print("in garbage collector")
         parents = self.get_parents()
+        # print("parents", parents)
         marked_objects = self.mark_phase(parents)
         self.sweep_phase(marked_objects)
+        # print("post:",self.array_heap)
         
 
     def mark_phase(self, parents):
@@ -86,7 +89,6 @@ class VM:
         # print("******************")
 
 
-
     def get_parents(self):
         parents = []
         for i in range(len(self.root_set)):
@@ -103,7 +105,6 @@ class VM:
                 self.root_set.remove(obj)
 
 
-        
 
         
     def __repr__(self):
@@ -169,6 +170,7 @@ class VM:
                 fun = cs[-1].template.function_name if cs else None
                 print('\t NEXT FUNCTION..:', fun)
 
+            # print(instr.opcode)
             
             #------------------------------------------------------------
             # Literals and Variables
@@ -194,10 +196,12 @@ class VM:
 
                 if type(val) == tuple:
                     self.root_set.append((self.call_stack_id, val[0]))
-                    print(self.struct_heap.keys())
-                    self.run_garbage_collector()
-                    print(self.struct_heap.keys())
 
+                if self.yellow_light_from_return:
+                    if type(val) == tuple:
+                        self.root_set.append((self.call_stack_id, val[0]))
+                    self.run_garbage_collector()
+                    self.yellow_light_from_return = False
 
             #------------------------------------------------------------
             # Operations
@@ -315,9 +319,13 @@ class VM:
                 if len(self.call_stack) > 0:
                     frame = self.call_stack[-1]
                     frame.operand_stack.append(return_val)
-                
-                self.clean_root_set(self.call_stack_id)
-                self.call_stack_id -= 1
+                    self.clean_root_set(self.call_stack_id)
+                    self.call_stack_id -= 1
+                    if frame.template.instructions[frame.pc].opcode in [OpCode.STORE, OpCode.SETF, OpCode.SETI]:
+                        self.yellow_light_from_return = True
+                    else:
+                        self.run_garbage_collector()
+
 
             
             #------------------------------------------------------------
@@ -415,46 +423,77 @@ class VM:
                 else:
                     self.struct_heap[oid_num][instr.operand] = val
 
+                if self.yellow_light_from_return:
+                    if type(val) == tuple:
+                        self.root_set.append((self.call_stack_id, val[0]))
+                    self.run_garbage_collector()
+                    self.yellow_light_from_return = False
+
 
             elif instr.opcode == OpCode.GETF:
                 oid = frame.operand_stack.pop()
+                oid_num = None
+                if type(oid) == tuple:
+                    oid_num = oid[0]
                 if oid == None:
                     self.error("null object")
-                frame.operand_stack.append(self.struct_heap[oid][instr.operand])
+                if oid_num is not None:
+                    frame.operand_stack.append(self.struct_heap[oid_num][instr.operand])
+                else:
+                    frame.operand_stack.append(self.struct_heap[oid][instr.operand])
+
 
             elif instr.opcode == OpCode.ALLOCA:
+                oid = self.next_obj_id[0]
                 array_len = frame.operand_stack.pop()
                 if(array_len == None):
                     self.error("array length cannot be null")
                 elif (array_len < 0):
                     self.error("array length cannot be negative")
                 self.array_heap[oid] = [None for _ in range(array_len)]
-                frame.operand_stack.append(oid)
+                frame.operand_stack.append(self.next_obj_id)
                 self.object_graph[oid] = HeapObject(oid)
-                
+                self.object_graph[self.next_obj_id[0]] = HeapObject(self.next_obj_id[0])
+                self.next_obj_id = (self.next_obj_id[0]+1,"heap_object")
+
 
             elif instr.opcode == OpCode.SETI:
                 val = frame.operand_stack.pop()
                 idx = frame.operand_stack.pop()
                 oid = frame.operand_stack.pop()
+                oid_num = oid[0]
+                val_num = None
                 if (oid == None):
                     self.error("array cannot be null")
                 if(idx == None):
                     self.error("index cannot be null")
-                elif (idx < 0 or idx > len(self.array_heap[oid])-1):
+                elif (idx < 0 or idx > len(self.array_heap[oid_num])-1):
                     self.error("array index out of bounds")
-                self.array_heap[oid][idx] = val
-            
+                if type(val) == tuple:
+                    val_num = val[0]
+                    self.array_heap[oid_num][idx] = val_num
+                    self.object_graph[oid_num].add_reference(val_num)
+                    self.object_graph[val_num].add_parent(oid_num)
+                else:
+                    self.array_heap[oid_num][idx] = val
+
+                if self.yellow_light_from_return:
+                    if type(val) == tuple:
+                        self.root_set.append((self.call_stack_id, val[0]))
+                    self.run_garbage_collector()
+                    self.yellow_light_from_return = False
+
             elif instr.opcode == OpCode.GETI:
                 idx = frame.operand_stack.pop()
                 oid = frame.operand_stack.pop()
+                oid_num = oid[0]
                 if (oid == None):
                     self.error("array cannot be null")
                 if(idx == None):
                     self.error("index cannot be null")
-                elif (idx < 0 or idx > len(self.array_heap[oid])-1):
+                elif (idx < 0 or idx > len(self.array_heap[oid_num])-1):
                     self.error("index out of bounds")
-                val = self.array_heap[oid][idx]
+                val = self.array_heap[oid_num][idx]
                 frame.operand_stack.append(val)
             
             #------------------------------------------------------------
@@ -473,4 +512,5 @@ class VM:
             else:
                 self.error(f'unsupported operation {instr}')
 
-        print(self.struct_heap)
+        print("struct", self.struct_heap)
+        print("array", self.array_heap)
