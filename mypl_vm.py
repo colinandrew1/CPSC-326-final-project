@@ -43,9 +43,9 @@ class VM:
 
 
     def run_garbage_collector(self):
+        print("in garbage collector")
         parents = self.get_parents()
         marked_objects = self.mark_phase(parents)
-        print(marked_objects)
         self.sweep_phase(marked_objects)
         
 
@@ -71,7 +71,20 @@ class VM:
                  
 
     def sweep_phase(self, marked_objects):
-        pass
+        # print(self.struct_heap.keys())
+        print(self.struct_heap)
+        print("marked", marked_objects)
+        object_graph_copy = self.object_graph.copy()
+        for key in object_graph_copy:
+            if key not in marked_objects:
+                if key in self.struct_heap:
+                    del self.struct_heap[key]
+                if key in self.array_heap:
+                    del self.array_heap[key]
+                del self.object_graph[key]
+        # print(self.struct_heap.keys())
+        # print("******************")
+
 
 
     def get_parents(self):
@@ -382,25 +395,19 @@ class VM:
             #------------------------------------------------------------
 
             elif instr.opcode == OpCode.ALLOCS:
-                # split_pieces = self.next_obj_id.split(",")
-                # oid = int(split_pieces[0])
-
                 self.struct_heap[self.next_obj_id[0]] = {}
                 frame.operand_stack.append(self.next_obj_id)
                 self.object_graph[self.next_obj_id[0]] = HeapObject(self.next_obj_id[0])
                 self.next_obj_id = (self.next_obj_id[0]+1,"heap_object")
-                #self.next_obj_id = str(oid+1) + "," + split_pieces[1]
+
 
             elif instr.opcode == OpCode.SETF:
                 val = frame.operand_stack.pop()
                 oid = frame.operand_stack.pop()
                 oid_num = oid[0]
                 val_num = None
-
                 if oid == None:
                     self.error("null object")
-                # print("val", val_num)
-                # print("oid", oid_num)
 
                 if type(val) == tuple:
                     val_num = val[0]
@@ -409,13 +416,10 @@ class VM:
                     self.object_graph[val_num].add_parent(oid_num)
                 else:
                     self.struct_heap[oid_num][instr.operand] = val
+
+                print(self.struct_heap)
+                print("*********")
                     
-                # if type(val) == str:
-                #     if "heap_object" in val:
-                #         oid = int(oid.split(",")[0])
-                #         val = int(val.split(",")[0])
-                #         self.object_graph[oid].add_reference(val)
-                #         self.object_graph[val].add_parent(oid)
 
             elif instr.opcode == OpCode.GETF:
                 oid = frame.operand_stack.pop()

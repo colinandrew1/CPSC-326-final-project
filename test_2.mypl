@@ -1,0 +1,17 @@
+struct Node {
+    int val;
+    Node next;
+}
+
+void main() {
+    Node n1 = new Node(1, null);    //2024
+    Node n2 = new Node(2, null);    //2025
+    my_fun();
+}
+
+void my_fun() {
+    Node n3 = new Node(3, null);    //2026
+    Node n4 = new Node(4, null);    //2027
+    Node n5 = new Node(5, null);    //2028
+    return null;
+}
