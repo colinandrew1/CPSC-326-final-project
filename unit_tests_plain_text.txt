@@ -1,11 +1,16 @@
-struct MyInt {
-    int val;
-}
-
 void main() {
-    for (int i = 0; i < 5; i = i + 1) {
-        MyInt x = new MyInt(5);
-    }
+    int x = 0;
+    array string xs = new string[2]; //2024  
+    array string js = my_fun();
 }
 
-assert captured.out == 'struct: [2024, 2025, 2026, 2027, 2028] , array: [] '
+array string my_fun() {
+    array string ys = new string[2]; //2025 
+    array string cs =  my_other_fun(); //2026 
+    return cs; //2026
+}
+
+array string my_other_fun() {
+    array string zs = new string[2]; //2026
+    return zs; //2026
+}
