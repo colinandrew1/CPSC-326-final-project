@@ -4,7 +4,7 @@ void main() {
     array int ys = new int[5];  // 2029
 }
 
-void my_fun() {
+array int my_fun() {
     for (int i = 0; i < 5; i = i+1) {
         array int xs = new int[2];  //2025, 2026, 2027, 2028
         if (i == 3) {

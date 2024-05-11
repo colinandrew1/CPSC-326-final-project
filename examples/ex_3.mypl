@@ -1,0 +1,20 @@
+struct Node {
+    int val;
+    Node next;
+}
+
+void main() {
+    Node node1 = new Node(1, null); // 2024
+    set_next(node1);
+}
+
+void set_next(Node n) {
+    n.next = new Node(2, null); // 2025
+    Node node2 = new Node(3, null); // 2026
+    set_next_next(n);
+}
+
+void set_next_next(Node n) {
+    n.next.next = new Node(3, null);    // 2027
+    Node node3 = new Node(4, null); // 2028
+}
