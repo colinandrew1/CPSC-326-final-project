@@ -1,0 +1,11 @@
+struct MyInt {
+    int val;
+}
+
+void main() {
+    for (int i = 0; i < 5; i = i + 1) {
+        MyInt x = new MyInt(5);
+    }
+}
+
+assert captured.out == 'struct: [2024, 2025, 2026, 2027, 2028] , array: [] '

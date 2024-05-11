@@ -408,7 +408,6 @@ class VM:
 
             elif instr.opcode == OpCode.ALLOCS:
                 self.struct_heap[self.next_obj_id] = {}
-                # print(self.struct_heap)
                 frame.operand_stack.append(self.next_obj_id)
                 self.object_graph[self.next_obj_id[0]] = HeapObject(self.next_obj_id[0])
                 self.next_obj_id = (self.next_obj_id[0]+1,"heap_object")
@@ -416,7 +415,6 @@ class VM:
 
             elif instr.opcode == OpCode.SETF:
                 val = frame.operand_stack.pop()
-                # print(val, instr.operand)
                 oid = frame.operand_stack.pop()
                 oid_num = oid[0]
                 val_num = None
@@ -427,15 +425,9 @@ class VM:
                     self.struct_heap[oid][instr.operand] = val
                     self.object_graph[oid_num].add_reference(val_num)
                     self.object_graph[val_num].add_parent(oid_num)
-                    # print(val_num)
                 else:
                     self.struct_heap[oid][instr.operand] = val
-                # print(self.object_graph)
-                # print(self.struct_heap)
-                #print("val", val)
-
-                #print("*************************")
-
+                
                 if self.yellow_light_from_return:
                     if type(val) == tuple:
                         self.root_set.append((self.call_stack_id, val[0]))
@@ -445,17 +437,9 @@ class VM:
 
             elif instr.opcode == OpCode.GETF:
                 oid = frame.operand_stack.pop()
-                oid_num = None
-                if type(oid) == tuple:
-                    oid_num = oid[0]
                 if oid == None:
                     self.error("null object")
-                if oid_num is not None:
-                    frame.operand_stack.append(self.struct_heap[oid][instr.operand])
-                    # print(self.struct_heap[oid_num][instr.operand])
-                else:
-                    frame.operand_stack.append(self.struct_heap[oid][instr.operand])
-                    # print(self.struct_heap[oid][instr.operand])
+                frame.operand_stack.append(self.struct_heap[oid][instr.operand])
 
 
             elif instr.opcode == OpCode.ALLOCA:
@@ -467,7 +451,6 @@ class VM:
                     self.error("array length cannot be negative")
                 self.array_heap[oid] = [None for _ in range(array_len)]
                 frame.operand_stack.append(self.next_obj_id)
-                # self.object_graph[oid] = HeapObject(oid)
                 self.object_graph[self.next_obj_id[0]] = HeapObject(self.next_obj_id[0])
                 self.next_obj_id = (self.next_obj_id[0]+1,"heap_object")
 
@@ -528,6 +511,4 @@ class VM:
             else:
                 self.error(f'unsupported operation {instr}')
 
-        print()
-        print("struct", [key[0] for key in self.struct_heap.keys()])
-        print("struct", [key[0] for key in self.array_heap.keys()])
+        print("struct:", [key[0] for key in self.struct_heap.keys()], ", array:", [key[0] for key in self.array_heap.keys()])
