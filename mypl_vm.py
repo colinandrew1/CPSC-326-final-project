@@ -490,7 +490,7 @@ class VM:
                     self.error("array cannot be null")
                 if(idx == None):
                     self.error("index cannot be null")
-                elif (idx < 0 or idx > len(self.array_heap[oid_num])-1):
+                elif (idx < 0 or idx > len(self.array_heap[oid])-1):
                     self.error("index out of bounds")
                 val = self.array_heap[oid][idx]
                 frame.operand_stack.append(val)

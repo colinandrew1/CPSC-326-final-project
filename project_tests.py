@@ -572,7 +572,6 @@ def test_nested_functions_no_return(capsys):
     print(captured.out)
     assert captured.out == 'struct: [] , array: [2024]\n'
 
-
 def test_nested_functions_inner_most_returns_but_not_to_main(capsys):
     program = (
         'void main() {\n'
@@ -619,3 +618,167 @@ def test_inner_returns_array_back_to_main(capsys):
     captured = capsys.readouterr()
     print(captured.out)
     assert captured.out == 'struct: [] , array: [2024, 2026]\n'
+
+def test_set_struct_field(capsys):
+    program = (
+        'struct Node {\n'
+        '    int val;\n'
+        '    Node next;\n'
+        '}\n'
+        '\n'
+        'void main() {\n'
+        '    Node node1 = new Node(1, null); // 2024\n'
+        '    set_next(node1);\n'
+        '}\n'
+        '\n'
+        'void set_next(Node n) {\n'
+        '    n.next = new Node(2, null); // 2025\n'
+        '    Node node2 = new Node(3, null); // 2026\n'
+        '}\n'
+    )
+    build(program).run()
+    captured = capsys.readouterr()
+    print(captured.out)
+    assert captured.out == 'struct: [2024, 2025] , array: []\n'
+
+def test_multi_layer_set_field(capsys):
+    program = (
+        'struct Node {\n'
+        '    int val;\n'
+        '    Node next;\n'
+        '}\n'
+        '\n'
+        'void main() {\n'
+        '    Node node1 = new Node(1, null); // 2024\n'
+        '    set_next(node1);\n'
+        '}\n'
+        '\n'
+        'void set_next(Node n) {\n'
+        '    n.next = new Node(2, null); // 2025\n'
+        '    Node node2 = new Node(3, null); // 2026\n'
+        '    set_next_next(n);\n'
+        '}\n'
+        '\n'
+        'void set_next_next(Node n) {\n'
+        '    n.next.next = new Node(3, null);    // 2027\n'
+        '    Node node3 = new Node(4, null); // 2028\n'
+        '}\n'
+    )
+    build(program).run()
+    captured = capsys.readouterr()
+    print(captured.out)
+    assert captured.out == 'struct: [2024, 2025, 2027] , array: []\n'
+
+def test_conditional_set_field_true(capsys):
+    program = (
+        'struct Node {\n'
+        '    int val;\n'
+        '    Node next;\n'
+        '}\n'
+        '\n'
+        'void main() {\n'
+        '    Node node1 = new Node(1, null); // 2024\n'
+        '    my_fun(node1, 5);   // 2025\n'
+        '}\n'
+        '\n'
+        'void my_fun(Node n, int val) {\n'
+        '    if (val == 5) {\n'
+        '        n.next = new Node(2, null); // 2025\n'
+        '    }\n'
+        '}\n'
+    )
+    build(program).run()
+    captured = capsys.readouterr()
+    print(captured.out)
+    assert captured.out == 'struct: [2024, 2025] , array: []\n'
+
+def test_conditional_set_field_false(capsys):
+    program = (
+        'struct Node {\n'
+        '    int val;\n'
+        '    Node next;\n'
+        '}\n'
+        '\n'
+        'void main() {\n'
+        '    Node node1 = new Node(1, null); // 2024\n'
+        '    my_fun(node1, 6);  \n'
+        '}\n'
+        '\n'
+        'void my_fun(Node n, int val) {\n'
+        '    if (val == 5) {\n'
+        '        n.next = new Node(2, null); // 2025\n'
+        '    }\n'
+        '}\n'
+    )
+    build(program).run()
+    captured = capsys.readouterr()
+    print(captured.out)
+    assert captured.out == 'struct: [2024] , array: []\n'
+
+def test_array_of_structs(capsys):
+    program = (
+        'struct Node {\n'
+        '    int val;\n'
+        '    Node next;\n'
+        '}\n'
+        '\n'
+        'void main() {\n'
+        '    array Node nodes = new Node[3]; //2024\n'
+        '    my_fun(nodes);  // 2025, 2026, 2027, 2028\n'
+        '}\n'
+        '\n'
+        'void my_fun(array Node nodes) {\n'
+        '    nodes[0] = new Node(1, null);   // 2025\n'
+        '    nodes[1] = new Node(2, null);   // 2026\n'
+        '    nodes[2] = new Node(3, null);   // 2027\n'
+        '    nodes[2].next = new Node(4, null);  // 2028\n'
+        '    array int xs = new int[1];  // 2029\n'
+        '}\n'
+    )
+    build(program).run()
+    captured = capsys.readouterr()
+    print(captured.out)
+    assert captured.out == 'struct: [2025, 2026, 2027, 2028] , array: [2024]\n'
+
+def test_struct_of_arrays(capsys):
+    program = (
+        'struct ArrayCollection {\n'
+        '    array int xs;\n'
+        '    array string ys;\n'
+        '    array bool zs;\n'
+        '    array double js;\n'
+        '}\n'
+        '\n'
+        'void main() {\n'
+        '    ArrayCollection ac = new ArrayCollection(null,null,null,null);  // 2024\n'
+        '    ac.xs = set_int_array(); // 2026\n'
+        '    ac.ys = set_string_array(); // 2028\n'
+        '    ac.zs = set_bool_array(); // 2030\n'
+        '    ac.js = set_double_array(); // 2032\n'
+        '}\n'
+        '\n'
+        'array int set_int_array() {\n'
+        '    array int a = new int[1];   // 2025\n'
+        '    return new int[1];  // 2026\n'
+        '}\n'
+        '\n'
+        'array string set_string_array() {\n'
+        '    array string a = new string[1];    // 2027\n'
+        '    return new string[1];   // 2028\n'
+        '}\n'
+        '\n'
+        'array bool set_bool_array() {\n'
+        '    array bool a = new bool[1]; // 2029\n'
+        '    return new bool[1]; // 2030\n'
+        '}\n'
+        '\n'
+        'array double set_double_array() {\n'
+        '    array double a = new double[1]; // 2031\n'
+        '    return new double[1];   // 2032\n'
+        '}\n'
+    )
+    build(program).run()
+    captured = capsys.readouterr()
+    print(captured.out)
+    assert captured.out == 'struct: [2024] , array: [2026, 2028, 2030, 2032]\n'
+
