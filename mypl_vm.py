@@ -72,7 +72,6 @@ class VM:
                  
 
     def sweep_phase(self, marked_objects):
-        # print(self.struct_heap.keys())
         struct_keys = [key[0] for key in self.struct_heap.keys()]
         array_keys = [key[0] for key in self.array_heap.keys()]
         object_graph_copy = self.object_graph.copy()
@@ -83,9 +82,6 @@ class VM:
                 if key in array_keys:
                     del self.array_heap[(key,"heap_object")]
                 del self.object_graph[key]
-        # print(self.struct_heap)
-        # print("******************")
-
 
     def get_parents(self):
         parents = []

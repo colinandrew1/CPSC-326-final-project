@@ -29,7 +29,7 @@ def build(program):
     ASTParser(Lexer(FileWrapper(io.StringIO(program)))).parse().accept(cg)
     return vm
 
-# test below are example of when the garbage collector should not be invoked
+# tests below are example of when the garbage collector should not be invoked
 
 def test_no_heap_allocated_objects(capsys):
     program = (
@@ -42,13 +42,14 @@ def test_no_heap_allocated_objects(capsys):
     print(captured.out)
     assert captured.out == 'struct: [] , array: []\n'
 
-def test_no_hep_allocs_but_struct_def_present(capsys):
+def test_no_heap_allocs_but_struct_def_present(capsys):
     program = (
         'struct Node {\n'
         '    int val;\n'
         '    Node next;\n'
         '}\n'
         'void main() {\n'
+        '    Node n;\n'
         '    int x = 0;\n'
         '}\n'
     )
@@ -203,7 +204,7 @@ def test_many_simple_struct_alloc_and_simple_array_alloc(capsys):
     print(captured.out)
     assert captured.out == 'struct: [2024, 2026, 2028, 2030] , array: [2025, 2027, 2029, 2031]\n'
 
-# test below are example of when the garbage collector should be invoked
+# tests below are example of when the garbage collector should be invoked
 
 def test_single_array_deallocated_one_remains(capsys):
     program = (
@@ -270,6 +271,8 @@ def test_single_struct_deallocated_one_remains(capsys):
         '\n'
         'void main() {\n'
         '    Node node1 = new Node(5, null); //2024\n'
+        '    my_fun();\n'
+
         '}\n'
         '\n'
         'void my_fun() {\n'

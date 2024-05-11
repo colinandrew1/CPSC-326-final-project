@@ -1,8 +1,17 @@
-void main() {
-    array int xs = new int[5];  // 2024
-    my_fun(); 
+struct Node {
+    int val;
+    Node next;
 }
 
-void my_fun() {
-    array int ys = new int[7];  // 2025
+void main() {
+    array int xs = new int[5];  // 2024
+    array Node nodes = new Node[6];  // 2025
+    Node newer_node = create_new_node(); // 2028, 2029, 2030, 2031
+}
+
+Node create_new_node() {
+    array int zs = new int[7];  // 2026
+    array int as = new int[8];  // 2027
+    Node new_node = new Node(1, new Node(2, new Node(3, new Node(4, null)))); // 2028, 2029, 2030, 2031
+    return new_node;   // 2028, 2029, 2030, 2031
 }
