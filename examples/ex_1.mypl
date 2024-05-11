@@ -1,0 +1,17 @@
+struct Node {
+    int val;
+    Node next;
+}
+
+void main() {
+    array Node nodes = new Node[3]; //2024
+    my_fun(nodes);  // 2025, 2026, 2027, 2028
+}
+
+void my_fun(array Node nodes) {
+    nodes[0] = new Node(1, null);   // 2025
+    nodes[1] = new Node(2, null);   // 2026
+    nodes[2] = new Node(3, null);   // 2027
+    nodes[2].next = new Node(4, null);  // 2028
+    array int xs = new int[1];  // 2029
+}

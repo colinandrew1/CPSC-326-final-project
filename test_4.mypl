@@ -1,9 +1,0 @@
-void main() {
-    array int xs;
-    xs = my_fun();  //2024
-}
-
-array int my_fun() {
-    array int ys = new int[7];  // 2024
-    return ys;
-}

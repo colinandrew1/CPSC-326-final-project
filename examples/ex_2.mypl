@@ -1,0 +1,8 @@
+void main() {
+    array int xs = new int[5];  // 2024
+    my_fun(); 
+}
+
+void my_fun() {
+    array int ys = new int[7];  // 2025
+}
