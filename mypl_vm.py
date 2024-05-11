@@ -44,12 +44,10 @@ class VM:
 
 
     def run_garbage_collector(self):
-        #print("in garbage collector")
-        parents = self.get_parents()
-        # print("parents", parents)
-        marked_objects = self.mark_phase(parents)
+        initial_marked_objects = self.get_parents()
+        parents = initial_marked_objects[0]
+        marked_objects = list(self.mark_phase(parents)) + initial_marked_objects[1]
         self.sweep_phase(marked_objects)
-        # print("post:",self.array_heap)
         
 
     def mark_phase(self, parents):
@@ -75,15 +73,15 @@ class VM:
 
     def sweep_phase(self, marked_objects):
         # print(self.struct_heap.keys())
-        #print(self.struct_heap)
-        #print("marked", marked_objects)
+        struct_keys = [key[0] for key in self.struct_heap.keys()]
+        array_keys = [key[0] for key in self.array_heap.keys()]
         object_graph_copy = self.object_graph.copy()
         for key in object_graph_copy:
             if key not in marked_objects:
-                if key in self.struct_heap:
-                    del self.struct_heap[key]
-                if key in self.array_heap:
-                    del self.array_heap[key]
+                if key in struct_keys:
+                    del self.struct_heap[(key,"heap_object")]
+                if key in array_keys:
+                    del self.array_heap[(key,"heap_object")]
                 del self.object_graph[key]
         # print(self.struct_heap)
         # print("******************")
@@ -91,14 +89,19 @@ class VM:
 
     def get_parents(self):
         parents = []
+        referenced_children = []
+        self.root_set = list(set(self.root_set))
         for i in range(len(self.root_set)):
             obj_id = self.root_set[i][1]
             if len(self.object_graph[obj_id].parents) == 0:
                 parents.append(obj_id)
-        return parents
+            else:
+                referenced_children.append(obj_id)
+        return (parents, referenced_children)
 
 
     def clean_root_set(self, call_stack_id):
+        # make sure this works as expected - i think it should be fine
         root_set_copy = self.root_set[:]
         for obj in root_set_copy:
             if obj[0] == call_stack_id:
@@ -196,6 +199,8 @@ class VM:
 
                 if type(val) == tuple:
                     self.root_set.append((self.call_stack_id, val[0]))
+
+                # print(val)
 
                 if self.yellow_light_from_return:
                     if type(val) == tuple:
@@ -402,7 +407,8 @@ class VM:
             #------------------------------------------------------------
 
             elif instr.opcode == OpCode.ALLOCS:
-                self.struct_heap[self.next_obj_id[0]] = {}
+                self.struct_heap[self.next_obj_id] = {}
+                # print(self.struct_heap)
                 frame.operand_stack.append(self.next_obj_id)
                 self.object_graph[self.next_obj_id[0]] = HeapObject(self.next_obj_id[0])
                 self.next_obj_id = (self.next_obj_id[0]+1,"heap_object")
@@ -410,6 +416,7 @@ class VM:
 
             elif instr.opcode == OpCode.SETF:
                 val = frame.operand_stack.pop()
+                # print(val, instr.operand)
                 oid = frame.operand_stack.pop()
                 oid_num = oid[0]
                 val_num = None
@@ -417,11 +424,17 @@ class VM:
                     self.error("null object")
                 if type(val) == tuple:
                     val_num = val[0]
-                    self.struct_heap[oid_num][instr.operand] = val_num
+                    self.struct_heap[oid][instr.operand] = val
                     self.object_graph[oid_num].add_reference(val_num)
                     self.object_graph[val_num].add_parent(oid_num)
+                    # print(val_num)
                 else:
-                    self.struct_heap[oid_num][instr.operand] = val
+                    self.struct_heap[oid][instr.operand] = val
+                # print(self.object_graph)
+                # print(self.struct_heap)
+                #print("val", val)
+
+                #print("*************************")
 
                 if self.yellow_light_from_return:
                     if type(val) == tuple:
@@ -438,13 +451,15 @@ class VM:
                 if oid == None:
                     self.error("null object")
                 if oid_num is not None:
-                    frame.operand_stack.append(self.struct_heap[oid_num][instr.operand])
+                    frame.operand_stack.append(self.struct_heap[oid][instr.operand])
+                    # print(self.struct_heap[oid_num][instr.operand])
                 else:
                     frame.operand_stack.append(self.struct_heap[oid][instr.operand])
+                    # print(self.struct_heap[oid][instr.operand])
 
 
             elif instr.opcode == OpCode.ALLOCA:
-                oid = self.next_obj_id[0]
+                oid = self.next_obj_id
                 array_len = frame.operand_stack.pop()
                 if(array_len == None):
                     self.error("array length cannot be null")
@@ -452,7 +467,7 @@ class VM:
                     self.error("array length cannot be negative")
                 self.array_heap[oid] = [None for _ in range(array_len)]
                 frame.operand_stack.append(self.next_obj_id)
-                self.object_graph[oid] = HeapObject(oid)
+                # self.object_graph[oid] = HeapObject(oid)
                 self.object_graph[self.next_obj_id[0]] = HeapObject(self.next_obj_id[0])
                 self.next_obj_id = (self.next_obj_id[0]+1,"heap_object")
 
@@ -467,21 +482,22 @@ class VM:
                     self.error("array cannot be null")
                 if(idx == None):
                     self.error("index cannot be null")
-                elif (idx < 0 or idx > len(self.array_heap[oid_num])-1):
+                elif (idx < 0 or idx > len(self.array_heap[oid])-1):
                     self.error("array index out of bounds")
                 if type(val) == tuple:
                     val_num = val[0]
-                    self.array_heap[oid_num][idx] = val_num
+                    self.array_heap[oid][idx] = val
                     self.object_graph[oid_num].add_reference(val_num)
                     self.object_graph[val_num].add_parent(oid_num)
                 else:
-                    self.array_heap[oid_num][idx] = val
+                    self.array_heap[oid][idx] = val
 
                 if self.yellow_light_from_return:
                     if type(val) == tuple:
                         self.root_set.append((self.call_stack_id, val[0]))
                     self.run_garbage_collector()
                     self.yellow_light_from_return = False
+
 
             elif instr.opcode == OpCode.GETI:
                 idx = frame.operand_stack.pop()
@@ -493,7 +509,7 @@ class VM:
                     self.error("index cannot be null")
                 elif (idx < 0 or idx > len(self.array_heap[oid_num])-1):
                     self.error("index out of bounds")
-                val = self.array_heap[oid_num][idx]
+                val = self.array_heap[oid][idx]
                 frame.operand_stack.append(val)
             
             #------------------------------------------------------------
@@ -512,5 +528,6 @@ class VM:
             else:
                 self.error(f'unsupported operation {instr}')
 
-        print("struct", self.struct_heap)
-        print("array", self.array_heap)
+        print()
+        print("struct", [key[0] for key in self.struct_heap.keys()])
+        print("struct", [key[0] for key in self.array_heap.keys()])

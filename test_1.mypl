@@ -6,12 +6,12 @@ struct Node {
 void main() {
     array int xs = new int[5];  // 2024
     array Node nodes = new Node[6];  // 2025
-    xs[0] = my_fun();   // 2028
+    Node newer_node = my_fun(); //2029
 }
 
-int my_fun() {
+Node my_fun() {
     array int zs = new int[7];  // 2026
     array int as = new int[8];  // 2027
-    // return new Node(1, null);   //2028
-    return 5;
+    Node new_node = new Node(1, new Node (2, new Node(3, new Node (4, null)))); // 2028, 2029, 2030, 2031
+    return new_node.next;   // 2029
 }
