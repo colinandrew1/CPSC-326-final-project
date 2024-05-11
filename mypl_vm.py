@@ -507,4 +507,4 @@ class VM:
             else:
                 self.error(f'unsupported operation {instr}')
 
-        print("struct:", [key[0] for key in self.struct_heap.keys()], ", array:", [key[0] for key in self.array_heap.keys()])
+        # print("struct:", [key[0] for key in self.struct_heap.keys()], ", array:", [key[0] for key in self.array_heap.keys()])
